@@ -1,4 +1,9 @@
 export const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://ck9pwskuab.ap-south-1.awsapprunner.com/api';
+
+// Generic JSON-like object used for request bodies where a specific shape isn't defined yet
+type JsonObject = Record<string, unknown>;
+
+type ValidationError = { msg?: string; message?: string };
 class ApiService {
   private getHeaders(includeAuth = true): HeadersInit {
     const headers: HeadersInit = {
@@ -45,7 +50,7 @@ class ApiService {
 
         // Better error handling for validation errors
         if (data.errors && Array.isArray(data.errors)) {
-          const errorMessages = data.errors.map((err: any) => err.msg || err.message).join(', ');
+          const errorMessages = data.errors.map((err: ValidationError) => err.msg || err.message).join(', ');
           throw new Error(errorMessages || 'Validation failed');
         }
 
@@ -69,10 +74,10 @@ class ApiService {
   // Convenience method to fetch sample questions for a subject
   async getSampleQuestions(subject: string, count = 5) {
     const q = `?count=${encodeURIComponent(String(count))}`;
-    return this.get<{ questions: any[] }>(`/tests/sample-questions/${encodeURIComponent(subject)}${q}`);
+    return this.get<{ questions: unknown[] }>(`/tests/sample-questions/${encodeURIComponent(subject)}${q}`);
   }
 
-  async post<T>(endpoint: string, data?: any, options: RequestInit = {}): Promise<T> {
+  async post<T>(endpoint: string, data?: unknown, options: RequestInit = {}): Promise<T> {
     return this.request<T>(endpoint, {
       ...options,
       method: 'POST',
@@ -80,7 +85,7 @@ class ApiService {
     });
   }
 
-  async put<T>(endpoint: string, data?: any, options: RequestInit = {}): Promise<T> {
+  async put<T>(endpoint: string, data?: Record<string, unknown>, options: RequestInit = {}): Promise<T> {
     return this.request<T>(endpoint, {
       ...options,
       method: 'PUT',
@@ -105,7 +110,7 @@ class ApiService {
     return this.request('/auth/me');
   }
 
-  async updateProfile(data: any) {
+  async updateProfile(data: JsonObject) {
     return this.request('/auth/profile', {
       method: 'PUT',
       body: JSON.stringify(data),
@@ -136,7 +141,7 @@ class ApiService {
   }
 
   // Admin endpoints (Master Admin)
-  async createCollege(collegeData: any) {
+  async createCollege(collegeData: JsonObject) {
     return this.request('/admin/colleges', {
       method: 'POST',
       body: JSON.stringify(collegeData),
@@ -158,7 +163,7 @@ class ApiService {
   }
 
   // College endpoints
-  async createUser(userData: any) {
+  async createUser(userData: JsonObject) {
     return this.request('/college/users', {
       method: 'POST',
       body: JSON.stringify(userData),
@@ -179,7 +184,7 @@ class ApiService {
     return this.request('/college/dashboard');
   }
 
-  async updateUser(userId: string, userData: any) {
+  async updateUser(userId: string, userData: JsonObject) {
     return this.request(`/college/users/${userId}`, {
       method: 'PUT',
       body: JSON.stringify(userData),
@@ -199,14 +204,14 @@ class ApiService {
   }
 
   // Test endpoints
-  async createTest(testData: any) {
+  async createTest(testData: JsonObject) {
     return this.request('/tests', {
       method: 'POST',
       body: JSON.stringify(testData),
     });
   }
 
-  async updateTest(testId: string, testData: any) {
+  async updateTest(testId: string, testData: JsonObject) {
     return this.request(`/tests/${testId}`, {
       method: 'PUT',
       body: JSON.stringify(testData),
@@ -268,7 +273,7 @@ class ApiService {
     });
   }
 
-  async assignTestToStudents(assignmentId: string, filters: any) {
+  async assignTestToStudents(assignmentId: string, filters: JsonObject) {
     return this.request(`/tests/assignment/${assignmentId}/assign-students`, {
       method: 'POST',
       body: JSON.stringify(filters),
@@ -299,7 +304,7 @@ class ApiService {
     });
   }
 
-  async submitTest(testId: string, answers: any[], startTime: Date, timeSpent: number, violations?: number) {
+  async submitTest(testId: string, answers: JsonObject[], startTime: Date, timeSpent: number, violations?: number) {
     return this.request(`/tests/${testId}/submit`, {
       method: 'POST',
       body: JSON.stringify({
@@ -405,7 +410,7 @@ class ApiService {
   }
 
   // Notification endpoints
-  async createNotification(notificationData: any) {
+  async createNotification(notificationData: JsonObject) {
     return this.request('/notifications', {
       method: 'POST',
       body: JSON.stringify(notificationData),
@@ -484,7 +489,7 @@ class ApiService {
     try {
       const query = days ? `?days=${encodeURIComponent(String(days))}` : '';
       return await this.request(`/analytics/dashboard${query}`);
-    } catch (error) {
+    } catch {
       // Fallback to admin stats if analytics endpoint fails
       return await this.getAdminStats();
     }
@@ -571,7 +576,7 @@ class ApiService {
     return this.request('/admin/profile');
   }
 
-  async updateMasterProfile(data: any) {
+  async updateMasterProfile(data: JsonObject) {
     return this.request('/admin/profile', {
       method: 'PUT',
       body: JSON.stringify(data),
@@ -582,7 +587,7 @@ class ApiService {
     return this.request(`/admin/tests/${testId}/report`);
   }
 
-  async updateCollege(collegeId: string, collegeData: any) {
+  async updateCollege(collegeId: string, collegeData: JsonObject) {
     return this.request(`/admin/colleges/${collegeId}`, {
       method: 'PUT',
       body: JSON.stringify(collegeData),
