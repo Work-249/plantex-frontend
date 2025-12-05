@@ -311,21 +311,21 @@ const CodingInterface: React.FC<CodingInterfaceProps> = ({
   }
 
   return (
-    <div className="h-full w-full flex flex-col bg-gray-50">
-      <div className="bg-white border-b px-6 py-3 flex-shrink-0">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Code className="w-6 h-6 text-blue-600" />
-            <h1 className="text-xl font-bold text-gray-800">{question.title}</h1>
-            <span className={`px-3 py-1 rounded-full text-xs font-medium ${getDifficultyColor(question.difficulty)}`}>
+    <div className="h-full w-full flex flex-col bg-gray-50 min-h-0 overflow-hidden">
+      <div className="bg-white border-b px-4 md:px-6 py-3 flex-shrink-0">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4">
+            <Code className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
+            <h1 className="text-lg sm:text-xl font-bold text-gray-800">{question.title}</h1>
+            <span className={`px-2 sm:px-3 py-1 rounded-full text-xs font-medium ${getDifficultyColor(question.difficulty)}`}>
               {question.difficulty.toUpperCase()}
             </span>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
             <select
               value={selectedLanguage}
               onChange={(e) => setSelectedLanguage(e.target.value)}
-              className="px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
+              className="flex-1 sm:flex-initial px-3 sm:px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
             >
               {question.supported_languages.map(lang => (
                 <option key={lang} value={lang}>
@@ -348,9 +348,9 @@ const CodingInterface: React.FC<CodingInterfaceProps> = ({
         </div>
       </div>
 
-      <div className="flex-1 flex overflow-hidden min-h-0">
-        <div className={`${fullscreen ? 'w-1/4' : 'w-1/4'} border-r bg-white overflow-y-auto flex-shrink-0`}>
-          <div className="p-3 space-y-3 pb-12">
+      <div className="flex-1 flex flex-col md:flex-row overflow-hidden min-h-0">
+        <div className={`${fullscreen ? 'w-full md:w-1/4' : 'w-full md:w-1/4'} border-r md:border-r bg-white overflow-y-auto flex-shrink-0 max-h-64 md:max-h-none`}>
+          <div className="p-2 md:p-3 space-y-2 md:space-y-3 pb-12">
             <div>
               <button
                 onClick={() => setShowDescription(!showDescription)}
@@ -421,7 +421,7 @@ const CodingInterface: React.FC<CodingInterfaceProps> = ({
           </div>
         </div>
 
-        <div className={`${fullscreen ? 'w-3/4' : 'w-3/4'} flex flex-col min-h-0`}>
+        <div className={`${fullscreen ? 'w-full md:w-3/4' : 'w-full md:w-3/4'} flex flex-col min-h-0`}>
           <div className="flex-1 p-2 bg-white flex flex-col min-h-0 overflow-hidden">
             <div className="flex-1 min-h-0 overflow-hidden">
               <CodeEditor
@@ -434,21 +434,21 @@ const CodingInterface: React.FC<CodingInterfaceProps> = ({
             </div>
           </div>
 
-          <div className="border-t bg-white flex flex-col" style={{ height: '30%', minHeight: '180px' }}>
-            <div className="px-4 py-2 flex items-center justify-between border-b bg-gray-100 flex-shrink-0">
+          <div className="border-t bg-white flex flex-col" style={{ height: '30%', minHeight: '200px' }}>
+            <div className="px-2 md:px-4 py-2 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 border-b bg-gray-100 flex-shrink-0">
               <button
                 onClick={() => setShowTestResults(!showTestResults)}
-                className="flex items-center gap-2 font-semibold text-gray-800 text-sm"
+                className="flex items-center gap-2 font-semibold text-gray-800 text-xs sm:text-sm"
               >
                 <Terminal className="w-4 h-4" />
                 Output & Test Results
                 {showTestResults ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
               </button>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2 w-full sm:w-auto">
                 <button
                   onClick={handleRunCode}
                   disabled={isRunning}
-                  className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 disabled:opacity-50 flex items-center gap-2 text-sm"
+                  className="flex-1 sm:flex-initial px-3 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 disabled:opacity-50 flex items-center justify-center gap-2 text-xs sm:text-sm"
                 >
                   {isRunning ? <Loader className="w-4 h-4 animate-spin" /> : null}
                   Run Code
@@ -456,16 +456,16 @@ const CodingInterface: React.FC<CodingInterfaceProps> = ({
                 <button
                   onClick={handleRunAllTests}
                   disabled={isSubmitting}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2 text-sm"
+                  className="flex-1 sm:flex-initial px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-2 text-xs sm:text-sm"
                 >
                   {isSubmitting && !hasRunAllTests ? <Loader className="w-4 h-4 animate-spin" /> : null}
-                  Run All Test Cases
+                  Run All Tests
                 </button>
                 {hasRunAllTests && (
                   <button
                     onClick={handleFinalSubmit}
                     disabled={isSubmitting}
-                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 flex items-center gap-2 text-sm font-semibold"
+                    className="flex-1 sm:flex-initial px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 flex items-center justify-center gap-2 text-xs sm:text-sm font-semibold"
                   >
                     {isSubmitting && hasRunAllTests ? <Loader className="w-4 h-4 animate-spin" /> : null}
                     Final Submit
