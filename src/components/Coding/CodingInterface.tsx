@@ -65,26 +65,12 @@ const CodingInterface: React.FC<CodingInterfaceProps> = ({
   }, [questionId]);
 
   useEffect(() => {
-    if (question) {
+    if (question && !code) {
       const starterCode = getStarterCode(selectedLanguage, question);
       setCode(starterCode);
     }
-  }, [selectedLanguage]);
+  }, [selectedLanguage, question]);
 
-  // Restore autosaved code if present
-  useEffect(() => {
-    const key = `coding_autosave:${questionId}:${testAttemptId || 'default'}`;
-    try {
-      const saved = localStorage.getItem(key);
-      if (saved) {
-        // Ask user to restore
-        const shouldRestore = window.confirm('Autosaved code found for this question. Restore?');
-        if (shouldRestore) setCode(saved);
-      }
-    } catch (err) {
-      // ignore localStorage errors
-    }
-  }, [questionId, testAttemptId]);
 
   // Autosave loop: save to localStorage every 10s when code changes
   useEffect(() => {
@@ -120,9 +106,16 @@ const CodingInterface: React.FC<CodingInterfaceProps> = ({
       const questionData = response.data;
       setQuestion(questionData);
 
-      // Set empty starter code based on language
-      const starterCode = getStarterCode(selectedLanguage, questionData);
-      setCode(starterCode);
+      // Only set starter code if no saved code exists
+      const key = `coding_autosave:${questionId}:${testAttemptId || 'default'}`;
+      const savedCode = localStorage.getItem(key);
+
+      if (savedCode) {
+        setCode(savedCode);
+      } else {
+        const starterCode = getStarterCode(selectedLanguage, questionData);
+        setCode(starterCode);
+      }
 
     } catch (error) {
       console.error('Error fetching question:', error);
