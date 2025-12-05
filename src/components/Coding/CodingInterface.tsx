@@ -1,0 +1,608 @@
+import React, { useState, useEffect } from 'react';
+import { Code, CheckCircle, XCircle, Clock, Loader, Terminal, ChevronDown, ChevronUp } from 'lucide-react';
+import CodeEditor from './CodeEditor';
+import api from '../../services/api';
+
+interface CodingQuestion {
+  id: string;
+  title: string;
+  description: string;
+  difficulty: string;
+  constraints: string;
+  input_format: string;
+  output_format: string;
+  sample_input: string;
+  sample_output: string;
+  explanation: string;
+  time_limit: number;
+  memory_limit: number;
+  supported_languages: string[];
+  tags: string[];
+}
+
+interface TestResult {
+  test_case_number: number;
+  passed: boolean;
+  input: string;
+  expected_output: string;
+  actual_output?: string;
+  execution_time?: number;
+  error?: string;
+}
+
+interface CodingInterfaceProps {
+  questionId: string;
+  testAttemptId?: string;
+  isPractice?: boolean;
+  onSubmit?: (submissionId: string, score: number) => void;
+  /** When true, show the test-results summary UI (Passed/Failed/Total). Defaults to true. */
+  showTestSummary?: boolean;
+  /** When true, suppress browser alert() and confirm() dialogs so parent can handle notifications. Defaults to false. */
+  suppressAlerts?: boolean;
+  fullscreen?: boolean;
+}
+
+const CodingInterface: React.FC<CodingInterfaceProps> = ({
+  questionId,
+  testAttemptId,
+  isPractice = false,
+  onSubmit,
+  showTestSummary = true,
+  suppressAlerts = false,
+  fullscreen = false
+}) => {
+  const [question, setQuestion] = useState<CodingQuestion | null>(null);
+  const [selectedLanguage, setSelectedLanguage] = useState('python');
+  const [code, setCode] = useState('');
+  const [output, setOutput] = useState('');
+  const [testResults, setTestResults] = useState<TestResult[]>([]);
+  const [isRunning, setIsRunning] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submissionStatus, setSubmissionStatus] = useState<string | null>(null);
+  const [showDescription, setShowDescription] = useState(true);
+  const [showTestResults, setShowTestResults] = useState(true);
+  const [autosaveStatus, setAutosaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
+  const [hasRunAllTests, setHasRunAllTests] = useState(false);
+  const [testCasesPassed, setTestCasesPassed] = useState(0);
+  const [totalTestCases, setTotalTestCases] = useState(0);
+
+  useEffect(() => {
+    fetchQuestion();
+  }, [questionId]);
+
+  useEffect(() => {
+    if (question && !code) {
+      const starterCode = getStarterCode(selectedLanguage, question);
+      setCode(starterCode);
+    }
+  }, [selectedLanguage, question]);
+
+
+  // Autosave loop: save to localStorage every 10s when code changes
+  useEffect(() => {
+    const key = `coding_autosave:${questionId}:${testAttemptId || 'default'}`;
+    let mounted = true;
+    const save = () => {
+      try {
+        setAutosaveStatus('saving');
+        localStorage.setItem(key, code);
+        if (mounted) setAutosaveStatus('saved');
+        setTimeout(() => mounted && setAutosaveStatus('idle'), 1500);
+      } catch (err) {
+        console.warn('Autosave failed', err);
+        if (mounted) setAutosaveStatus('idle');
+      }
+    };
+
+    const interval = setInterval(() => {
+      if (code && code.trim().length > 0) save();
+    }, 10000);
+
+    // save on unmount as well
+    return () => {
+      mounted = false;
+      clearInterval(interval);
+      try { localStorage.setItem(key, code); } catch (e) {}
+    };
+  }, [code, questionId, testAttemptId]);
+
+  const fetchQuestion = async () => {
+    try {
+      const response = await api.get<{ data: CodingQuestion }>(`/coding/questions/${questionId}`);
+      const questionData = response.data;
+      setQuestion(questionData);
+
+      // Only set starter code if no saved code exists
+      const key = `coding_autosave:${questionId}:${testAttemptId || 'default'}`;
+      const savedCode = localStorage.getItem(key);
+
+      if (savedCode) {
+        setCode(savedCode);
+      } else {
+        const starterCode = getStarterCode(selectedLanguage, questionData);
+        setCode(starterCode);
+      }
+
+    } catch (error) {
+      console.error('Error fetching question:', error);
+      setOutput('Error fetching question. Please try again.');
+      alert('Failed to load coding question. Please try again or contact support.');
+    }
+  };
+
+  const getStarterCode = (language: string, question: CodingQuestion | null) => {
+    if (!question) return '';
+
+    switch (language.toLowerCase()) {
+      case 'python':
+        return `# ${question.title}\n# Write your solution here\n\n`;
+      case 'javascript':
+        return `// ${question.title}\n// Write your solution here\n\n`;
+      case 'java':
+        return `// ${question.title}\n// Write your solution here\n\npublic class Solution {\n    \n}\n`;
+      case 'cpp':
+        return `// ${question.title}\n// Write your solution here\n\n#include <iostream>\nusing namespace std;\n\n`;
+      default:
+        return `// ${question.title}\n// Write your solution here\n\n`;
+    }
+  };
+
+  const handleRunCode = async () => {
+    if (!code.trim()) {
+      alert('Please write some code first');
+      return;
+    }
+
+    setIsRunning(true);
+    setOutput('Running code...');
+    setTestResults([]);
+
+    try {
+      const response = await api.post<{ output?: string; error?: string; testResults?: TestResult[] }>('/coding/run', {
+        questionId,
+        code,
+        language: selectedLanguage.toLowerCase()
+      });
+
+      const data = response || {};
+
+      if (data.error) {
+        setOutput('Error: ' + data.error);
+      } else {
+        setOutput(data.output || 'Code executed successfully');
+        if (data.testResults && Array.isArray(data.testResults)) {
+          setTestResults(data.testResults);
+        }
+      }
+    } catch (error: any) {
+      console.error('Run code error:', error);
+      const errorMessage = error.response?.data?.error || error.message || 'Error running code';
+      setOutput('Error: ' + errorMessage);
+    } finally {
+      setIsRunning(false);
+    }
+  };
+
+  const handleRunAllTests = async () => {
+    if (!code.trim()) {
+      alert('Please write some code first');
+      return;
+    }
+
+    setIsSubmitting(true);
+    setSubmissionStatus(null);
+    setOutput('Running all test cases...');
+
+    try {
+      interface SubmitResponse {
+        status: string;
+        testResults: TestResult[];
+        submissionId: string;
+        score: number;
+        testCasesPassed: number;
+        totalTestCases: number;
+      }
+
+      const response = await api.post<SubmitResponse>('/coding/submit', {
+        questionId,
+        testAttemptId,
+        code,
+        language: selectedLanguage.toLowerCase(),
+        isPractice
+      });
+
+      setTestResults(response.testResults || []);
+      setTestCasesPassed(response.testCasesPassed || 0);
+      setTotalTestCases(response.totalTestCases || 0);
+      setHasRunAllTests(true);
+      setOutput(`Test Results: ${response.testCasesPassed}/${response.totalTestCases} test cases passed`);
+
+      console.info('Test run complete', {
+        status: response.status,
+        testCasesPassed: response.testCasesPassed,
+        totalTestCases: response.totalTestCases
+      });
+    } catch (error: any) {
+      const errorMessage = error?.response?.data?.error || error?.message || 'Error running test cases';
+      console.error('Test run error details:', {
+        status: error?.response?.status,
+        data: error?.response?.data,
+        message: error?.message,
+        fullError: error
+      });
+      setOutput('Error: ' + errorMessage);
+      if (!suppressAlerts) {
+        alert(errorMessage);
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleFinalSubmit = async () => {
+    if (!hasRunAllTests) {
+      if (!suppressAlerts) alert('Please run all test cases first before submitting');
+      return;
+    }
+
+    const confirmMessage = `Are you sure you want to make your final submission?\n\nTest Results: ${testCasesPassed}/${totalTestCases} test cases passed\n\nThis action cannot be undone.`;
+
+    if (!suppressAlerts) {
+      if (!confirm(confirmMessage)) {
+        return;
+      }
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      interface SubmitResponse {
+        status: string;
+        testResults: TestResult[];
+        submissionId: string;
+        score: number;
+        testCasesPassed: number;
+        totalTestCases: number;
+      }
+
+      const response = await api.post<SubmitResponse>('/coding/submit', {
+        questionId,
+        testAttemptId,
+        code,
+        language: selectedLanguage.toLowerCase(),
+        isPractice
+      });
+
+      setSubmissionStatus(response.status);
+
+      if (onSubmit) {
+        onSubmit(response.submissionId, response.score);
+      }
+
+      if (!suppressAlerts) {
+        alert(`Final submission successful!\n\n${response.testCasesPassed}/${response.totalTestCases} test cases passed`);
+      }
+
+      console.info('Final submission result', {
+        status: response.status,
+        testCasesPassed: response.testCasesPassed,
+        totalTestCases: response.totalTestCases,
+        score: response.score
+      });
+    } catch (error: any) {
+      const errorMessage = error?.response?.data?.error || error?.message || 'Error submitting code';
+      console.error('Submission error details:', {
+        status: error?.response?.status,
+        data: error?.response?.data,
+        message: error?.message,
+        fullError: error
+      });
+      if (!suppressAlerts) {
+        alert(errorMessage);
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const getDifficultyColor = (difficulty: string) => {
+    switch (difficulty) {
+      case 'easy': return 'text-green-600 bg-green-100';
+      case 'medium': return 'text-yellow-600 bg-yellow-100';
+      case 'hard': return 'text-red-600 bg-red-100';
+      default: return 'text-gray-600 bg-gray-100';
+    }
+  };
+
+  if (!question) {
+    return (
+      <div className="flex flex-col justify-center items-center h-96 bg-gray-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
+        <p className="text-gray-600">Loading coding question...</p>
+        <p className="text-sm text-gray-500 mt-2">If this takes too long, the question may not exist in the database.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="h-full w-full flex flex-col bg-gray-50 min-h-0 overflow-hidden">
+      <div className="bg-white border-b px-4 md:px-6 py-3 flex-shrink-0">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4">
+            <Code className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
+            <h1 className="text-lg sm:text-xl font-bold text-gray-800">{question.title}</h1>
+            <span className={`px-2 sm:px-3 py-1 rounded-full text-xs font-medium ${getDifficultyColor(question.difficulty)}`}>
+              {question.difficulty.toUpperCase()}
+            </span>
+          </div>
+          <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
+            <select
+              value={selectedLanguage}
+              onChange={(e) => setSelectedLanguage(e.target.value)}
+              className="flex-1 sm:flex-initial px-3 sm:px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
+            >
+              {question.supported_languages.map(lang => (
+                <option key={lang} value={lang}>
+                  {lang.charAt(0).toUpperCase() + lang.slice(1)}
+                </option>
+              ))}
+            </select>
+            <div className="text-xs text-gray-500 min-w-[60px]">
+              {autosaveStatus === 'saving' ? 'Saving...' : autosaveStatus === 'saved' ? 'Saved' : ''}
+            </div>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap gap-2 mt-2">
+          {question.tags.map(tag => (
+            <span key={tag} className="px-2 py-1 bg-blue-50 text-blue-600 rounded text-xs">
+              {tag}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      <div className="flex-1 flex flex-col md:flex-row overflow-hidden min-h-0">
+        <div className={`${fullscreen ? 'w-full md:w-1/4' : 'w-full md:w-1/4'} border-r md:border-r bg-white overflow-y-auto flex-shrink-0 max-h-64 md:max-h-none`}>
+          <div className="p-2 md:p-3 space-y-2 md:space-y-3 pb-12">
+            <div>
+              <button
+                onClick={() => setShowDescription(!showDescription)}
+                className="flex items-center justify-between w-full text-left mb-2 sticky top-0 bg-white z-10 py-2"
+              >
+                <h2 className="text-base font-semibold text-gray-800">Problem Description</h2>
+                {showDescription ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+              </button>
+              {showDescription && (
+                <div className="prose max-w-none">
+                  <p className="text-gray-700 whitespace-pre-wrap leading-relaxed text-sm">{question.description}</p>
+                </div>
+              )}
+            </div>
+
+            {question.constraints && (
+              <div>
+                <h3 className="font-semibold text-gray-800 mb-1 text-sm">Constraints</h3>
+                <p className="text-gray-700 text-xs whitespace-pre-wrap">{question.constraints}</p>
+              </div>
+            )}
+
+            {question.input_format && (
+              <div>
+                <h3 className="font-semibold text-gray-800 mb-1 text-sm">Input Format</h3>
+                <p className="text-gray-700 text-xs whitespace-pre-wrap">{question.input_format}</p>
+              </div>
+            )}
+
+            {question.output_format && (
+              <div>
+                <h3 className="font-semibold text-gray-800 mb-1 text-sm">Output Format</h3>
+                <p className="text-gray-700 text-xs whitespace-pre-wrap">{question.output_format}</p>
+              </div>
+            )}
+
+            {question.sample_input && (
+              <div>
+                <h3 className="font-semibold text-gray-800 mb-1 text-sm">Sample Input</h3>
+                <pre className="bg-gray-100 p-2 rounded text-xs overflow-x-auto">{question.sample_input}</pre>
+              </div>
+            )}
+
+            {question.sample_output && (
+              <div>
+                <h3 className="font-semibold text-gray-800 mb-1 text-sm">Sample Output</h3>
+                <pre className="bg-gray-100 p-2 rounded text-xs overflow-x-auto">{question.sample_output}</pre>
+              </div>
+            )}
+
+            {question.explanation && (
+              <div>
+                <h3 className="font-semibold text-gray-800 mb-1 text-sm">Explanation</h3>
+                <p className="text-gray-700 text-xs whitespace-pre-wrap">{question.explanation}</p>
+              </div>
+            )}
+
+            <div className="flex flex-col gap-2 text-xs text-gray-600 pt-3 border-t">
+              <div className="flex items-center gap-2">
+                <Clock className="w-3 h-3" />
+                <span>Time Limit: {question.time_limit}ms</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Terminal className="w-3 h-3" />
+                <span>Memory Limit: {question.memory_limit}MB</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className={`${fullscreen ? 'w-full md:w-3/4' : 'w-full md:w-3/4'} flex flex-col min-h-0`}>
+          <div className="flex-1 p-2 bg-white flex flex-col min-h-0 overflow-hidden">
+            <div className="flex-1 min-h-0 overflow-hidden">
+              <CodeEditor
+                language={selectedLanguage}
+                initialCode={code}
+                onCodeChange={setCode}
+                height="100%"
+                forceFullscreen={fullscreen}
+              />
+            </div>
+          </div>
+
+          <div className="border-t bg-white flex flex-col" style={{ height: '30%', minHeight: '200px' }}>
+            <div className="px-2 md:px-4 py-2 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 border-b bg-gray-100 flex-shrink-0">
+              <button
+                onClick={() => setShowTestResults(!showTestResults)}
+                className="flex items-center gap-2 font-semibold text-gray-800 text-xs sm:text-sm"
+              >
+                <Terminal className="w-4 h-4" />
+                Output & Test Results
+                {showTestResults ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
+              </button>
+              <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+                <button
+                  onClick={handleRunCode}
+                  disabled={isRunning}
+                  className="flex-1 sm:flex-initial px-3 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 disabled:opacity-50 flex items-center justify-center gap-2 text-xs sm:text-sm"
+                >
+                  {isRunning ? <Loader className="w-4 h-4 animate-spin" /> : null}
+                  Run Code
+                </button>
+                <button
+                  onClick={handleRunAllTests}
+                  disabled={isSubmitting}
+                  className="flex-1 sm:flex-initial px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-2 text-xs sm:text-sm"
+                >
+                  {isSubmitting && !hasRunAllTests ? <Loader className="w-4 h-4 animate-spin" /> : null}
+                  Run All Tests
+                </button>
+                {hasRunAllTests && (
+                  <button
+                    onClick={handleFinalSubmit}
+                    disabled={isSubmitting}
+                    className="flex-1 sm:flex-initial px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 flex items-center justify-center gap-2 text-xs sm:text-sm font-semibold"
+                  >
+                    {isSubmitting && hasRunAllTests ? <Loader className="w-4 h-4 animate-spin" /> : null}
+                    Final Submit
+                  </button>
+                )}
+              </div>
+            </div>
+            {showTestSummary && hasRunAllTests && !submissionStatus && (
+              <div className="px-4 py-2 text-center text-sm bg-yellow-50 border-b flex-shrink-0">
+                <span className="font-medium text-yellow-800">
+                  Test Results: {testCasesPassed}/{totalTestCases} test cases passed
+                  {testCasesPassed === totalTestCases ? ' ✅ All tests passed!' : ' - Review failed cases below'}
+                </span>
+              </div>
+            )}
+            {submissionStatus && (
+              <div className="px-4 py-2 text-center text-sm bg-blue-50 border-b flex-shrink-0">
+                <span
+                  className={`font-medium ${submissionStatus.toLowerCase() === 'accepted'
+                      ? 'text-green-600'
+                      : 'text-red-600'
+                    }`}
+                >
+                  {submissionStatus.toLowerCase() === 'accepted'
+                    ? '✅ Final Submission Accepted! Great job.'
+                    : `Final Submission status: ${submissionStatus}`}
+                </span>
+              </div>
+            )}
+
+            {showTestResults && (
+              <div className="p-4 overflow-y-auto bg-gray-50 flex-1">
+                {output && (
+                  <div className="mb-4">
+                    <pre className="bg-gray-900 text-green-400 p-3 rounded text-sm overflow-x-auto font-mono">
+                      {output}
+                    </pre>
+                  </div>
+                )}
+
+                {showTestSummary && testResults.length > 0 && (
+                  <div className="space-y-3">
+                    <div className="bg-white border rounded-lg p-4 mb-4">
+                      <h3 className="font-semibold text-gray-900 mb-2">Test Summary</h3>
+                      <div className="flex gap-6 text-sm">
+                        <div className="flex items-center gap-2">
+                          <CheckCircle className="w-5 h-5 text-green-600" />
+                          <span className="font-medium text-green-600">
+                            Passed: {testResults.filter(r => r.passed).length}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <XCircle className="w-5 h-5 text-red-600" />
+                          <span className="font-medium text-red-600">
+                            Failed: {testResults.filter(r => !r.passed).length}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium text-gray-700">
+                            Total: {testResults.length}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    {testResults.map((result, index) => (
+                      <div
+                        key={index}
+                        className={`border rounded-lg p-3 ${result.passed ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}
+                      >
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="font-medium">Test Case {result.test_case_number}</span>
+                          {result.passed ? (
+                            <CheckCircle className="w-5 h-5 text-green-600" />
+                          ) : (
+                            <XCircle className="w-5 h-5 text-red-600" />
+                          )}
+                        </div>
+                        {!result.passed && (
+                          <div className="text-sm space-y-1">
+                            <div>
+                              <span className="text-gray-600">Input:</span>
+                              <pre className="bg-white p-2 rounded mt-1 text-xs">{result.input}</pre>
+                            </div>
+                            <div>
+                              <span className="text-gray-600">Expected:</span>
+                              <pre className="bg-white p-2 rounded mt-1 text-xs">{result.expected_output}</pre>
+                            </div>
+                            {result.actual_output && (
+                              <div>
+                                <span className="text-gray-600">Your Output:</span>
+                                <pre className="bg-white p-2 rounded mt-1 text-xs">{result.actual_output}</pre>
+                              </div>
+                            )}
+                            {result.error && (
+                              <div>
+                                <span className="text-red-600">Error:</span>
+                                <pre className="bg-white p-2 rounded mt-1 text-xs text-red-600">{result.error}</pre>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        {result.execution_time && (
+                          <div className="text-xs text-gray-600 mt-2">
+                            Execution time: {result.execution_time}ms
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {!output && testResults.length === 0 && (
+                  <div className="text-center text-gray-500 py-8">
+                    Run your code to see the output
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default CodingInterface;
