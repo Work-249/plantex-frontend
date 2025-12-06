@@ -1,0 +1,23 @@
+/* External styles for CleanTestInterface */
+
+.fullscreenViolations {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0.75rem;
+  background-color: #fee2e2;
+  border: 1px solid #fecaca;
+  border-radius: 0.5rem;
+}
+
+.fullscreenViolationsIcon {
+  width: 1rem;
+  height: 1rem;
+  color: #dc2626;
+}
+
+.fullscreenViolationsText {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #b91c1c;
+}
