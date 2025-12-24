@@ -1,6 +1,8 @@
 import React from 'react';
 import { LogOut, User, Menu } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import api from '../../services/api';
+import toast from 'react-hot-toast';
 import NotificationBell from '../Notifications/NotificationBell';
 
 interface NavbarProps {
@@ -14,8 +16,21 @@ const Navbar: React.FC<NavbarProps> = ({ title, onProfileClick, onTabChange, onT
   const { state, dispatch } = useAuth();
   // logo fetching removed — use default static asset in the markup
 
-  const handleLogout = () => {
-    dispatch({ type: 'LOGOUT' });
+  const handleLogout = async () => {
+    try {
+      const logoutPromise = api.logout();
+      toast.promise(logoutPromise, {
+        loading: 'Logging out...',
+        success: 'Logged out successfully',
+        error: 'Logout failed, clearing local session...',
+      });
+
+      await logoutPromise;
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      dispatch({ type: 'LOGOUT' });
+    }
   };
 
   const getRoleDisplayName = (role: string) => {
@@ -59,7 +74,7 @@ const Navbar: React.FC<NavbarProps> = ({ title, onProfileClick, onTabChange, onT
 
           <div className="flex items-center gap-1 md:gap-2">
             <NotificationBell onNavigate={onTabChange} />
-            
+
             {onProfileClick && (
               <button
                 onClick={onProfileClick}

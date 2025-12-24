@@ -2,13 +2,15 @@
 export const API_BASE_URL = 'http://localhost:8000/api';
 
 
-let tokenRefreshPromise: Promise<string | null> | null = null;
+
 
 class ApiService {
-  private getHeaders(): HeadersInit {
-    return {
-      'Content-Type': 'application/json',
-    };
+  private getHeaders(includeContentType: boolean = true): HeadersInit {
+    const headers: HeadersInit = {};
+    if (includeContentType) {
+      headers['Content-Type'] = 'application/json';
+    }
+    return headers;
   }
 
   private async request<T>(
@@ -105,6 +107,10 @@ class ApiService {
     lastLogin?: string;
   }> {
     return this.request('/auth/me');
+  }
+
+  async logout() {
+    return this.post('/auth/logout');
   }
 
   async updateProfile(data: any) {
