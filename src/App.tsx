@@ -7,6 +7,7 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import PlantechXLoader from './components/UI/PlantechXLoader';
 import GlobalLoader from './components/UI/GlobalLoader';
+import apiService from './services/api';
 import toast from 'react-hot-toast';
 
 function App() {
@@ -21,9 +22,39 @@ function App() {
     return () => clearTimeout(minLoadingTime);
   }, []);
 
-  // Session initialization is handled by AuthContext mount effect.
-  // We can still use App's useEffect to handle side effects like welcome toast if needed,
-  // but for now we'll let AuthContext handle the state.
+  useEffect(() => {
+    const initializeAuth = async () => {
+      const token = localStorage.getItem('token');
+      const userStr = localStorage.getItem('user');
+
+      if (token && userStr) {
+        try {
+          dispatch({ type: 'LOGIN_START' });
+
+          const currentUser = await apiService.getCurrentUser();
+
+          dispatch({
+            type: 'LOGIN_SUCCESS',
+            payload: { user: currentUser, token }
+          });
+
+          toast.success(`Welcome back, ${currentUser?.name || 'User'}!`);
+
+        } catch (error) {
+          console.error('Token validation failed:', error);
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          dispatch({ type: 'LOGOUT' });
+
+          toast.error('Session expired. Please log in again.');
+        }
+      } else {
+        dispatch({ type: 'LOGOUT' });
+      }
+    };
+
+    initializeAuth();
+  }, [dispatch]);
 
   if (state.loading || !minLoadingComplete) {
     return <PlantechXLoader message="Initializing PlantechX..." />;
