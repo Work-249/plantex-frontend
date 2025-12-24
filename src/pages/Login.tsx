@@ -39,40 +39,40 @@ const Login: React.FC = () => {
     });
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    dispatch({ type: 'LOGIN_START' });
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  dispatch({ type: 'LOGIN_START' });
 
-    try {
-      const response = await apiService.login(formData.email, formData.password) as any;
+  try {
+    const response = await apiService.login(formData.email, formData.password) as any;
 
-      // Assuming response contains user info or token
-      if (response?.user) {
-        toast.success(`You have successfully logged in as ${response.user.name || 'User'}`);
-        dispatch({ type: 'LOGIN_SUCCESS', payload: { user: response.user } });
-      } else {
-        toast.error('⚠️ Account not found. Please sign up first.');
-        dispatch({ type: 'LOGIN_ERROR', payload: 'Account not found' });
-      }
-
-    } catch (error: any) {
-      // Check error message for wrong credentials
-      const errMsg = error?.response?.data?.message || error.message || 'Login failed';
-
-      if (errMsg.toLowerCase().includes('password')) {
-        toast.error('❌ Incorrect password. Please try again.');
-      } else if (errMsg.toLowerCase().includes('email')) {
-        toast.error('📧 Invalid email address.');
-      } else {
-        toast.error(`⚠️ ${errMsg}`);
-      }
-
-      dispatch({
-        type: 'LOGIN_ERROR',
-        payload: errMsg,
-      });
+    // Assuming response contains user info or token
+    if (response?.user) {
+      toast.success(`You have successfully logged in as ${response.user.name || 'User'}`);
+      dispatch({ type: 'LOGIN_SUCCESS', payload: response });
+    } else {
+      toast.error('⚠️ Account not found. Please sign up first.');
+      dispatch({ type: 'LOGIN_ERROR', payload: 'Account not found' });
     }
-  };
+
+  } catch (error: any) {
+    // Check error message for wrong credentials
+    const errMsg = error?.response?.data?.message || error.message || 'Login failed';
+
+    if (errMsg.toLowerCase().includes('password')) {
+      toast.error('❌ Incorrect password. Please try again.');
+    } else if (errMsg.toLowerCase().includes('email')) {
+      toast.error('📧 Invalid email address.');
+    } else {
+      toast.error(`⚠️ ${errMsg}`);
+    }
+
+    dispatch({
+      type: 'LOGIN_ERROR',
+      payload: errMsg,
+    });
+  }
+};
 
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();

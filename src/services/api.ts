@@ -1,41 +1,98 @@
-// export const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://ck9pwskuab.ap-south-1.awsapprunner.com/api';
-export const API_BASE_URL = 'http://localhost:8000/api';
-
+export const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://ck9pwskuab.ap-south-1.awsapprunner.com/api';
 
 let tokenRefreshPromise: Promise<string | null> | null = null;
 
 class ApiService {
-  private getHeaders(): HeadersInit {
-    return {
+  private async refreshToken(): Promise<string | null> {
+    // Avoid multiple simultaneous refresh requests
+    if (tokenRefreshPromise) {
+      return tokenRefreshPromise;
+    }
+
+    tokenRefreshPromise = (async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/auth/refresh-token`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          localStorage.setItem('token', data.token);
+          tokenRefreshPromise = null;
+          return data.token;
+        } else {
+          // Token refresh failed, clear storage and redirect to login
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          window.location.href = '/login';
+          tokenRefreshPromise = null;
+          return null;
+        }
+      } catch (error) {
+        console.error('Token refresh error:', error);
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.location.href = '/login';
+        tokenRefreshPromise = null;
+        return null;
+      }
+    })();
+
+    return tokenRefreshPromise;
+  }
+
+  private getHeaders(includeAuth = true): HeadersInit {
+    const headers: HeadersInit = {
       'Content-Type': 'application/json',
     };
+
+    if (includeAuth) {
+      const token = localStorage.getItem('token');
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+    }
+
+    return headers;
   }
 
   private async request<T>(
     endpoint: string,
-    options: RequestInit = {}
+    options: RequestInit = {},
+    retryCount = 0
   ): Promise<T> {
     const url = `${API_BASE_URL}${endpoint}`;
 
     try {
       const response = await fetch(url, {
         ...options,
-        credentials: 'include',
         headers: {
-          ...this.getHeaders(),
+          ...this.getHeaders(true),
           ...options.headers,
         },
       });
 
       if (!response.ok) {
         if (response.status === 401) {
-          // Clear user session info on frontend if unauthorized
+          // Attempt token refresh on 401, then retry once
+          if (retryCount === 0) {
+            const newToken = await this.refreshToken();
+            if (newToken) {
+              return this.request<T>(endpoint, options, retryCount + 1);
+            }
+          }
+          // Clear invalid token if refresh failed or already retried
+          localStorage.removeItem('token');
           localStorage.removeItem('user');
           throw new Error('Session expired. Please log in again.');
         }
 
         const data = await response.json();
-
+        
         if (response.status === 403) {
           throw new Error('Access denied. You do not have permission to access this resource.');
         }
@@ -91,7 +148,9 @@ class ApiService {
 
   // Auth endpoints
   async login(email: string, password: string) {
-    return this.post('/auth/login', { email, password });
+    return this.post('/auth/login', { email, password }, {
+      headers: this.getHeaders(false),
+    });
   }
 
   async getCurrentUser(): Promise<{
@@ -167,7 +226,7 @@ class ApiService {
     });
   }
 
-  // If page & limit provided, the server returns { users, total, page, limit }
+    // If page & limit provided, the server returns { users, total, page, limit }
   async getCollegeUsers(role: 'faculty' | 'student', collegeId?: string, page?: number, limit?: number) {
     const params = new URLSearchParams();
     if (collegeId) params.append('collegeId', collegeId);
@@ -225,7 +284,7 @@ class ApiService {
     const params = new URLSearchParams();
     if (testType) params.append('testType', testType);
     if (subject) params.append('subject', subject);
-
+    
     const queryString = params.toString();
     return this.request(`/tests${queryString ? `?${queryString}` : ''}`);
   }
@@ -369,7 +428,7 @@ class ApiService {
     if (batch) params.append('batch', batch);
     if (branch) params.append('branch', branch);
     if (section) params.append('section', section);
-
+    
     const queryString = params.toString();
     return this.request(`/college/students/filtered${queryString ? `?${queryString}` : ''}`);
   }
@@ -379,11 +438,11 @@ class ApiService {
     if (batch) params.append('batch', batch);
     if (branch) params.append('branch', branch);
     if (section) params.append('section', section);
-
+    
     const queryString = params.toString();
     return this.request(`/reports/college/hierarchical${queryString ? `?${queryString}` : ''}`);
   }
-
+  
   // Platform settings
   async getSettings() {
     return this.request('/settings');
@@ -423,7 +482,7 @@ class ApiService {
     const params = new URLSearchParams();
     if (batch) params.append('batch', batch);
     if (section) params.append('section', section);
-
+    
     const queryString = params.toString();
     return this.request(`/reports/faculty/hierarchical${queryString ? `?${queryString}` : ''}`);
   }

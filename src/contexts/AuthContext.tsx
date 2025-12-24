@@ -13,13 +13,14 @@ interface User {
 
 interface AuthState {
   user: User | null;
+  token: string | null;
   loading: boolean;
   error: string | null;
 }
 
 type AuthAction =
   | { type: 'LOGIN_START' }
-  | { type: 'LOGIN_SUCCESS'; payload: { user: User } }
+  | { type: 'LOGIN_SUCCESS'; payload: { user: User; token: string } }
   | { type: 'LOGIN_ERROR'; payload: string }
   | { type: 'LOGOUT' }
   | { type: 'UPDATE_USER'; payload: User }
@@ -27,7 +28,8 @@ type AuthAction =
 
 const initialState: AuthState = {
   user: null,
-  loading: true, // Start with loading to check session
+  token: null,
+  loading: false,
   error: null,
 };
 
@@ -36,26 +38,32 @@ const authReducer = (state: AuthState, action: AuthAction): AuthState => {
     case 'LOGIN_START':
       return { ...state, loading: true, error: null };
     case 'LOGIN_SUCCESS':
+      localStorage.setItem('token', action.payload.token);
       localStorage.setItem('user', JSON.stringify(action.payload.user));
       return {
         ...state,
         user: action.payload.user,
+        token: action.payload.token,
         loading: false,
         error: null,
       };
     case 'LOGIN_ERROR':
+      localStorage.removeItem('token');
       localStorage.removeItem('user');
       return {
         ...state,
         user: null,
+        token: null,
         loading: false,
         error: action.payload,
       };
     case 'LOGOUT':
+      localStorage.removeItem('token');
       localStorage.removeItem('user');
       return {
         ...state,
         user: null,
+        token: null,
         loading: false,
         error: null,
       };
@@ -74,24 +82,10 @@ const AuthContext = createContext<{
   dispatch: React.Dispatch<AuthAction>;
 } | null>(null);
 
-import api from '../services/api';
-
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const [state, dispatch] = useReducer(authReducer, initialState);
-
-  useEffect(() => {
-    const initAuth = async () => {
-      try {
-        const user = await api.getCurrentUser();
-        dispatch({ type: 'LOGIN_SUCCESS', payload: { user } });
-      } catch (err) {
-        dispatch({ type: 'LOGIN_ERROR', payload: 'Session expired' });
-      }
-    };
-    initAuth();
-  }, []);
 
   return (
     <AuthContext.Provider value={{ state, dispatch }}>

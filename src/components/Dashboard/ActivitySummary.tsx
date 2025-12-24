@@ -18,7 +18,7 @@ const ActivitySummary: React.FC = () => {
       if (!mounted) return;
       setActiveStudents(res.activeStudents || 0);
       setAdminLoginSummary(res.adminLoginSummary || { lastLogin: null, totalLogins: 0 });
-    }).catch(() => { });
+    }).catch(() => {});
 
     // Initialize socket connection at runtime with guards to avoid connecting to
     // third-party hosts during local development. This prevents repeated failed
@@ -47,7 +47,10 @@ const ActivitySummary: React.FC = () => {
       try {
         mountedSocket = io(API_BASE, {
           path: '/socket.io',
-          transports: ['websocket', 'polling']
+          transports: ['websocket', 'polling'],
+          auth: {
+            token: typeof window !== 'undefined' ? localStorage.getItem('token') : null
+          }
         });
 
         mountedSocket.on('activity:update', (payload: any) => {
@@ -64,7 +67,7 @@ const ActivitySummary: React.FC = () => {
       mounted = false;
       if (mountedSocket) {
         mountedSocket.off('activity:update');
-        try { mountedSocket.disconnect(); } catch (e) { }
+        try { mountedSocket.disconnect(); } catch (e) {}
       }
     };
   }, []);
