@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Building, Users, GraduationCap,  CheckCircle, Clock, FileText, BarChart3,  BookOpen,  Search, Filter, Eye, CreditCard as Edit, Trash2, Settings, Bell } from 'lucide-react';
+import { Plus, Building, Users, GraduationCap, CheckCircle, Clock, FileText, BarChart3, BookOpen, Search, Filter, Eye, CreditCard as Edit, Trash2, Settings, Bell } from 'lucide-react';
 import apiService from '../../services/api';
 import toast from 'react-hot-toast';
 import Modal from '../../components/UI/Modal';
@@ -480,7 +480,7 @@ const MasterAdminDashboard: React.FC<MasterAdminDashboardProps> = ({ activeTab, 
     return (
       <div className="text-center text-red-600 py-12">
         <p>{error}</p>
-        <button 
+        <button
           onClick={loadData}
           className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
         >
@@ -525,27 +525,27 @@ const MasterAdminDashboard: React.FC<MasterAdminDashboardProps> = ({ activeTab, 
           </div>
         </div>
 
-              <div className="bg-white rounded-lg shadow">
-                <div className="px-6 py-4 border-b flex items-center justify-between">
-                  <h3 className="text-lg font-medium">Recent Login Activity</h3>
-                  <div className="flex items-center gap-2">
-                    <label htmlFor="analytics-days" className="text-sm text-gray-600">Window:</label>
-                    <select
-                      id="analytics-days"
-                      value={analyticsDays}
-                      onChange={(e) => {
-                        const d = parseInt(e.target.value, 10) || 30;
-                        setAnalyticsDays(d);
-                        loadAnalyticsData(d);
-                      }}
-                      className="border border-gray-300 rounded px-2 py-1 text-sm bg-white"
-                    >
-                      <option value={7}>7 days</option>
-                      <option value={30}>30 days</option>
-                      <option value={90}>90 days</option>
-                    </select>
-                  </div>
-                </div>
+        <div className="bg-white rounded-lg shadow">
+          <div className="px-6 py-4 border-b flex items-center justify-between">
+            <h3 className="text-lg font-medium">Recent Login Activity</h3>
+            <div className="flex items-center gap-2">
+              <label htmlFor="analytics-days" className="text-sm text-gray-600">Window:</label>
+              <select
+                id="analytics-days"
+                value={analyticsDays}
+                onChange={(e) => {
+                  const d = parseInt(e.target.value, 10) || 30;
+                  setAnalyticsDays(d);
+                  loadAnalyticsData(d);
+                }}
+                className="border border-gray-300 rounded px-2 py-1 text-sm bg-white"
+              >
+                <option value={7}>7 days</option>
+                <option value={30}>30 days</option>
+                <option value={90}>90 days</option>
+              </select>
+            </div>
+          </div>
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
@@ -624,8 +624,8 @@ const MasterAdminDashboard: React.FC<MasterAdminDashboardProps> = ({ activeTab, 
           title="Create New Notification"
           size="lg"
         >
-          <NotificationForm 
-            onSubmit={handleCreateNotification} 
+          <NotificationForm
+            onSubmit={handleCreateNotification}
             loading={formLoading}
             onClose={() => setShowNotificationForm(false)}
           />
@@ -649,7 +649,7 @@ const MasterAdminDashboard: React.FC<MasterAdminDashboardProps> = ({ activeTab, 
           </button>
         </div>
 
-       
+
 
         <AdvancedTestGrid
           tests={tests}
@@ -950,11 +950,10 @@ const MasterAdminDashboard: React.FC<MasterAdminDashboardProps> = ({ activeTab, 
                     <span className="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-800 rounded">
                       {college.code}
                     </span>
-                    <span className={`px-2 py-1 text-xs font-medium rounded ${
-                      college.isActive
-                        ? 'bg-green-100 text-green-800'
-                        : 'bg-red-100 text-red-800'
-                    }`}>
+                    <span className={`px-2 py-1 text-xs font-medium rounded ${college.isActive
+                      ? 'bg-green-100 text-green-800'
+                      : 'bg-red-100 text-red-800'
+                      }`}>
                       {college.isActive ? 'Active' : 'Inactive'}
                     </span>
                   </div>
@@ -996,11 +995,10 @@ const MasterAdminDashboard: React.FC<MasterAdminDashboardProps> = ({ activeTab, 
                 <div className="flex flex-col gap-2">
                   <button
                     onClick={() => toggleCollegeStatus(college.id)}
-                    className={`px-3 py-1 rounded text-sm ${
-                      college.isActive
-                        ? 'bg-red-100 text-red-700 hover:bg-red-200'
-                        : 'bg-green-100 text-green-700 hover:bg-green-200'
-                    }`}
+                    className={`px-3 py-1 rounded text-sm ${college.isActive
+                      ? 'bg-red-100 text-red-700 hover:bg-red-200'
+                      : 'bg-green-100 text-green-700 hover:bg-green-200'
+                      }`}
                   >
                     {college.isActive ? 'Deactivate' : 'Activate'}
                   </button>
@@ -1043,8 +1041,8 @@ const MasterAdminDashboard: React.FC<MasterAdminDashboardProps> = ({ activeTab, 
           size="md"
         >
           {editingCollege && (
-            <CollegeForm 
-              onSubmit={handleUpdateCollege} 
+            <CollegeForm
+              onSubmit={handleUpdateCollege}
               loading={formLoading}
               initialData={{
                 name: editingCollege.name,
@@ -1124,15 +1122,14 @@ const MasterAdminDashboard: React.FC<MasterAdminDashboardProps> = ({ activeTab, 
                         <span className="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-800 rounded">
                           {college.code}
                         </span>
-                        <span className={`px-2 py-1 text-xs font-medium rounded ${
-                          college.isActive 
-                            ? 'bg-green-100 text-green-800' 
-                            : 'bg-red-100 text-red-800'
-                        }`}>
+                        <span className={`px-2 py-1 text-xs font-medium rounded ${college.isActive
+                          ? 'bg-green-100 text-green-800'
+                          : 'bg-red-100 text-red-800'
+                          }`}>
                           {college.isActive ? 'Active' : 'Inactive'}
                         </span>
                       </div>
-                      
+
                       <div className="grid grid-cols-2 gap-4 mb-4">
                         <div className="flex items-center gap-2 text-gray-600">
                           <Building className="h-4 w-4" />
@@ -1175,14 +1172,14 @@ const MasterAdminDashboard: React.FC<MasterAdminDashboardProps> = ({ activeTab, 
                       <Eye size={16} />
                       View
                     </button>
-                    <button 
+                    <button
                       onClick={() => handleEditCollege(college)}
                       className="flex items-center gap-2 px-3 py-2 bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
                     >
                       <Edit size={16} />
                       Edit
                     </button>
-                    <button 
+                    <button
                       onClick={() => handleManageAdmin(college)}
                       className="flex items-center gap-2 px-3 py-2 bg-green-100 text-green-700 rounded hover:bg-green-200"
                     >
@@ -1214,52 +1211,48 @@ const MasterAdminDashboard: React.FC<MasterAdminDashboardProps> = ({ activeTab, 
 
                       {/* Tabs */}
                       <div className="flex border-b mb-6">
-                        <button 
+                        <button
                           onClick={() => setSelectedTab('batches')}
-                          className={`px-4 py-2 ${
-                            selectedTab === 'batches' 
-                              ? 'border-b-2 border-blue-500 text-blue-600 font-medium' 
-                              : 'text-gray-500 hover:text-gray-700'
-                          }`}
+                          className={`px-4 py-2 ${selectedTab === 'batches'
+                            ? 'border-b-2 border-blue-500 text-blue-600 font-medium'
+                            : 'text-gray-500 hover:text-gray-700'
+                            }`}
                         >
                           <Building className="inline h-4 w-4 mr-2" />
                           Batches
                         </button>
-                        <button 
+                        <button
                           onClick={() => {
                             setSelectedTab('faculty');
                             loadCollegeUsers(college.id, 'faculty');
                           }}
-                          className={`px-4 py-2 ${
-                            selectedTab === 'faculty' 
-                              ? 'border-b-2 border-blue-500 text-blue-600 font-medium' 
-                              : 'text-gray-500 hover:text-gray-700'
-                          }`}
+                          className={`px-4 py-2 ${selectedTab === 'faculty'
+                            ? 'border-b-2 border-blue-500 text-blue-600 font-medium'
+                            : 'text-gray-500 hover:text-gray-700'
+                            }`}
                         >
                           <Users className="inline h-4 w-4 mr-2" />
                           Faculty
                         </button>
-                        <button 
+                        <button
                           onClick={() => {
                             setSelectedTab('students');
                             loadCollegeUsers(college.id, 'student');
                           }}
-                          className={`px-4 py-2 ${
-                            selectedTab === 'students' 
-                              ? 'border-b-2 border-blue-500 text-blue-600 font-medium' 
-                              : 'text-gray-500 hover:text-gray-700'
-                          }`}
+                          className={`px-4 py-2 ${selectedTab === 'students'
+                            ? 'border-b-2 border-blue-500 text-blue-600 font-medium'
+                            : 'text-gray-500 hover:text-gray-700'
+                            }`}
                         >
                           <GraduationCap className="inline h-4 w-4 mr-2" />
                           Students
                         </button>
-                        <button 
+                        <button
                           onClick={() => setSelectedTab('tests')}
-                          className={`px-4 py-2 ${
-                            selectedTab === 'tests' 
-                              ? 'border-b-2 border-blue-500 text-blue-600 font-medium' 
-                              : 'text-gray-500 hover:text-gray-700'
-                          }`}
+                          className={`px-4 py-2 ${selectedTab === 'tests'
+                            ? 'border-b-2 border-blue-500 text-blue-600 font-medium'
+                            : 'text-gray-500 hover:text-gray-700'
+                            }`}
                         >
                           <FileText className="inline h-4 w-4 mr-2" />
                           Tests
@@ -1342,11 +1335,10 @@ const MasterAdminDashboard: React.FC<MasterAdminDashboardProps> = ({ activeTab, 
                                         {faculty.email}
                                       </td>
                                       <td className="px-6 py-4 whitespace-nowrap">
-                                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                                          faculty.isActive 
-                                            ? 'bg-green-100 text-green-800' 
-                                            : 'bg-red-100 text-red-800'
-                                        }`}>
+                                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${faculty.isActive
+                                          ? 'bg-green-100 text-green-800'
+                                          : 'bg-red-100 text-red-800'
+                                          }`}>
                                           {faculty.isActive ? 'Active' : 'Inactive'}
                                         </span>
                                       </td>
@@ -1401,11 +1393,10 @@ const MasterAdminDashboard: React.FC<MasterAdminDashboardProps> = ({ activeTab, 
                                         {student.branch}
                                       </td>
                                       <td className="px-6 py-4 whitespace-nowrap">
-                                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                                          student.isActive 
-                                            ? 'bg-green-100 text-green-800' 
-                                            : 'bg-red-100 text-red-800'
-                                        }`}>
+                                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${student.isActive
+                                          ? 'bg-green-100 text-green-800'
+                                          : 'bg-red-100 text-red-800'
+                                          }`}>
                                           {student.isActive ? 'Active' : 'Inactive'}
                                         </span>
                                       </td>
@@ -1455,8 +1446,8 @@ const MasterAdminDashboard: React.FC<MasterAdminDashboardProps> = ({ activeTab, 
           title="Edit College"
           size="md"
         >
-          <CollegeForm 
-            onSubmit={handleUpdateCollege} 
+          <CollegeForm
+            onSubmit={handleUpdateCollege}
             loading={formLoading}
             initialData={editingCollege ? {
               name: editingCollege.name,
@@ -1478,7 +1469,7 @@ const MasterAdminDashboard: React.FC<MasterAdminDashboardProps> = ({ activeTab, 
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
           <p className="text-gray-600 mt-1">
-            Last updated: {new Date().toLocaleString()} • 
+            Last updated: {new Date().toLocaleString()} •
             {analyticsData ? ' Live data' : ' Loading...'}
           </p>
         </div>
@@ -1504,7 +1495,7 @@ const MasterAdminDashboard: React.FC<MasterAdminDashboardProps> = ({ activeTab, 
           </div>
           {analyticsData && (
             // Export the dashboard's recent activity by default so CSV matches the Recent Activity panel
-            <ExportButton 
+            <ExportButton
               data={analyticsData}
               exportArrayKey="recentActivity"
               filename={`dashboard-analytics-${analyticsDays}d`}
@@ -1527,7 +1518,7 @@ const MasterAdminDashboard: React.FC<MasterAdminDashboardProps> = ({ activeTab, 
           }}
           onClick={() => setActiveTab('colleges')}
         />
-        
+
         <AnalyticsCard
           title="Total Students"
           value={analyticsData?.overview?.totalStudents || stats?.totalStudents || 0}
@@ -1538,7 +1529,7 @@ const MasterAdminDashboard: React.FC<MasterAdminDashboardProps> = ({ activeTab, 
             isPositive: (analyticsData?.platformGrowth?.studentGrowthPercentage || 0) >= 0
           }}
         />
-        
+
         <AnalyticsCard
           title="Active Exams"
           value={analyticsData?.overview?.activeExams || 0}
@@ -1562,7 +1553,7 @@ const MasterAdminDashboard: React.FC<MasterAdminDashboardProps> = ({ activeTab, 
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {analyticsData?.pendingActions && (
-          <PendingActions 
+          <PendingActions
             data={analyticsData.pendingActions}
             onActionClick={handlePendingActionClick}
           />
@@ -1607,8 +1598,8 @@ const MasterAdminDashboard: React.FC<MasterAdminDashboardProps> = ({ activeTab, 
         title="Create New Notification"
         size="lg"
       >
-        <NotificationForm 
-          onSubmit={handleCreateNotification} 
+        <NotificationForm
+          onSubmit={handleCreateNotification}
           loading={formLoading}
           onClose={() => setShowNotificationForm(false)}
         />

@@ -40,13 +40,12 @@ const ExportButton: React.FC<ExportButtonProps> = ({ data, filename, title = "Ex
       }
 
       // Request server to stream CSV matching current filters/pagination
-      const token = localStorage.getItem('token');
       fetch('/api/admin/export', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Content-Type': 'application/json'
         },
+        credentials: 'include',
         body: JSON.stringify({ format: 'csv', filename, data: rowsToExport })
       }).then(async (res) => {
         if (!res.ok) {
@@ -91,7 +90,7 @@ const ExportButton: React.FC<ExportButtonProps> = ({ data, filename, title = "Ex
     }
   };
 
-  
+
 
   const convertToPDF = async (data: any, title: string) => {
     // Simple PDF generation using HTML to PDF conversion
@@ -115,36 +114,36 @@ const ExportButton: React.FC<ExportButtonProps> = ({ data, filename, title = "Ex
           
           ${data.overview ? `
             <h2>Overview Statistics</h2>
-            ${Object.entries(data.overview).map(([key, value]) => 
-              `<div class="metric"><span>${key.replace(/([A-Z])/g, ' $1').trim()}:</span><span>${value}</span></div>`
-            ).join('')}
+            ${Object.entries(data.overview).map(([key, value]) =>
+      `<div class="metric"><span>${key.replace(/([A-Z])/g, ' $1').trim()}:</span><span>${value}</span></div>`
+    ).join('')}
           ` : ''}
           
           ${data.platformGrowth ? `
             <h2>Platform Growth (Last 30 Days)</h2>
-            ${Object.entries(data.platformGrowth).map(([key, value]) => 
-              `<div class="metric"><span>${key.replace(/([A-Z])/g, ' $1').trim()}:</span><span>${value}</span></div>`
-            ).join('')}
+            ${Object.entries(data.platformGrowth).map(([key, value]) =>
+      `<div class="metric"><span>${key.replace(/([A-Z])/g, ' $1').trim()}:</span><span>${value}</span></div>`
+    ).join('')}
           ` : ''}
           
           ${data.recentActivity ? `
             <h2>Recent Activity</h2>
             <table>
               <tr><th>Type</th><th>Description</th><th>Details</th><th>Time</th></tr>
-              ${data.recentActivity.map((activity: any) => 
-                `<tr>
+              ${data.recentActivity.map((activity: any) =>
+      `<tr>
                   <td>${activity.type}</td>
                   <td>${activity.description}</td>
                   <td>${activity.details}</td>
                   <td>${activity.timeAgo}</td>
                 </tr>`
-              ).join('')}
+    ).join('')}
             </table>
           ` : ''}
         </body>
       </html>
     `;
-    
+
     return htmlContent;
   };
 
@@ -177,8 +176,8 @@ const ExportButton: React.FC<ExportButtonProps> = ({ data, filename, title = "Ex
 
       {showOptions && (
         <>
-          <div 
-            className="fixed inset-0 z-10" 
+          <div
+            className="fixed inset-0 z-10"
             onClick={() => setShowOptions(false)}
           />
           <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border z-20">
