@@ -82,6 +82,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const [state, dispatch] = useReducer(authReducer, initialState);
 
   useEffect(() => {
+    // Register callback for when the API service detects a 401 Unauthorized error
+    api.setUnauthorizedCallback(() => {
+      dispatch({ type: 'LOGOUT' });
+    });
+  }, [dispatch]);
+
+  useEffect(() => {
     const initAuth = async () => {
       try {
         const user = await api.getCurrentUser();

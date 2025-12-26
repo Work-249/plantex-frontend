@@ -25,16 +25,22 @@ function App() {
   // We can still use App's useEffect to handle side effects like welcome toast if needed,
   // but for now we'll let AuthContext handle the state.
 
+  // Show error toast only when state.error changes
+  useEffect(() => {
+    if (state.error && !state.user) {
+      toast.error(state.error);
+    }
+  }, [state.error, state.user]);
+
   if (state.loading || !minLoadingComplete) {
     return <PlantechXLoader message="Initializing PlantechX..." />;
   }
 
   // ❌ Authentication error (invalid credentials, etc.)
   if (state.error && !state.user) {
-    toast.error(state.error);
-
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <Toaster position="top-right" />
         <div className="text-center">
           <div className="bg-red-50 border border-red-200 rounded-lg p-6 max-w-md">
             <h2 className="text-lg font-semibold text-red-800 mb-2">Authentication Error</h2>
