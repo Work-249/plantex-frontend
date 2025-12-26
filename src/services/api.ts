@@ -1,10 +1,16 @@
-// export const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://ck9pwskuab.ap-south-1.awsapprunner.com/api';
-export const API_BASE_URL = 'http://localhost:8000/api';
+export const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://ck9pwskuab.ap-south-1.awsapprunner.com/api';
+// export const API_BASE_URL = 'http://localhost:8000/api';
 
 
 let tokenRefreshPromise: Promise<string | null> | null = null;
 
 class ApiService {
+  private onUnauthorized: (() => void) | null = null;
+
+  setUnauthorizedCallback(callback: () => void) {
+    this.onUnauthorized = callback;
+  }
+
   private getHeaders(): HeadersInit {
     return {
       'Content-Type': 'application/json',
@@ -31,6 +37,9 @@ class ApiService {
         if (response.status === 401) {
           // Clear user session info on frontend if unauthorized
           localStorage.removeItem('user');
+          if (this.onUnauthorized) {
+            this.onUnauthorized();
+          }
           throw new Error('Session expired. Please log in again.');
         }
 
@@ -135,6 +144,10 @@ class ApiService {
       headers: this.getHeaders(false),
       body: JSON.stringify({ password }),
     });
+  }
+
+  async logout() {
+    return this.post('/auth/logout');
   }
 
   // Admin endpoints (Master Admin)
